@@ -13,30 +13,6 @@ tags:
   - name: auth
     description: authenticating operations
 paths:
-  
-  /auth/register:
-    post:
-      tags:
-      - auth
-      summary: Register new user
-      operationId: registerUser
-      requestBody:
-        description: User with data to be registered
-        content:
-          'application/json':
-            schema:
-              $ref: '#/components/schemas/UserToCreate'
-        required: true
-      responses:
-        200:
-          description: "successful operation. User is registered"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        400:
-          description: "User with such username already exists"
-      
   /auth/login:
     post:
       tags:
@@ -80,6 +56,30 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
       security:
       - bearerAuth: []
+  
+  /user:
+    post:
+      tags:
+      - user
+      summary: Register new user
+      operationId: registerUser
+      requestBody:
+        description: User with data to be registered
+        content:
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      responses:
+        200:
+          description: "successful operation. User is registered"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: "User with such username already exists"
+  
       
   /user/{userId}:
     get:
@@ -174,7 +174,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventToCreate'
+              $ref: '#/components/schemas/Event'
       responses:
         200:
           description: "successful operation. Event is created"
@@ -277,12 +277,20 @@ paths:
       security:
       - bearerAuth: []  
   
-  /events/username:
+  /user/events/{username}:
      get:
       tags:
-      - event
+      - user
       summary: Get events for user with provided username
       description: Getting events for user with provided username
+      parameters:
+      - name: username
+        in: path
+        required: true
+        description: 'The username of user to retrieve events from.'
+        schema:
+          type: integer
+          format: int64
       operationId: getEventByUsername
       responses:
         200:
@@ -294,36 +302,16 @@ paths:
                 items:
                   $ref: '#/components/schemas/Event'
         401:
-          $ref: '#/components/responses/UnauthorizedError'        
+          $ref: '#/components/responses/UnauthorizedError'   
+        404:
+          description: User is not found.
       security:
       - bearerAuth: []
-    
-  /events/me:
-     get:
-      tags:
-      - event
-      summary: Get events for current user
-      description: Getting events for current user
-      operationId: getEvent
-      responses:
-        200:
-          description: "successful operation. Return list of all events related to current user"
-          content:
-            application/json:
-              schema:
-                type: "array"
-                items:
-                  $ref: '#/components/schemas/Event'
-        401:
-          $ref: '#/components/responses/UnauthorizedError'        
-      security:
-      - bearerAuth: []
-      
+
 components:
   schemas:
     User:
       required:
-      - id
       - username
       - password
       - name
@@ -342,46 +330,7 @@ components:
         password:
           type: string
           format: password
-    UserToCreate:
-      required:
-      - username
-      - password
-      - name
-      - surname
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-        surname:
-          type: string
-        username:
-          type: string
-        password:
-          type: string
-          format: password    
     Event:
-      required:
-      - id
-      - title
-      - date
-      - participants
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        title:
-          type: string
-        date:
-          type: string
-        participants:
-          type: array
-          items:
-            type: string
-    EventToCreate:
       required:
       - title
       - date
