@@ -11,7 +11,9 @@ tags:
   - name: user
     description: operations with users
   - name: auth
-    description: authenticating operations
+    description: login/logout operations
+  - name: calendar
+    description: operations with calendars  
 paths:
   /auth/login:
     post:
@@ -80,7 +82,6 @@ paths:
         400:
           description: "User with such username already exists"
   
-      
   /user/{userId}:
     get:
       tags:
@@ -144,13 +145,128 @@ paths:
       security:
       - bearerAuth: []
   
-  /events:
+  /calendars:
+    get:
+      tags:
+      - calendar
+      summary: Get all calendars
+      description: Getting of all existsng calendars
+      operationId: getCalendars
+      responses:
+        200:
+          description: "successful operation. Return list of all calendars"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: '#/components/schemas/Event'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'          
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - calendar
+      summary: Create new calendar
+      description: Creating a new calendar
+      operationId: createCalendar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Calendar'
+      responses:
+        200:
+          description: "successful operation. Calendar is created"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calendar'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'     
+      security:
+      - bearerAuth: []
+      
+      
+  /calendars/{calendarId}:
+    put:
+      tags:
+      - calendar
+      summary: Update calendar
+      description: Updating existing calendar owned by current user
+      operationId: updateCalendar
+      parameters:
+      - name: calendarId
+        in: path
+        required: true
+        description: 'The calendar id that needs to be updated.'
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        description: 'Updated calendar object.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Calendar'
+        required: true
+      responses:
+        200:
+          description:  "successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calendar'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: It is forbidden to delete not your calendar.
+        404:
+          description: Calendar is not found.
+      security:
+      - bearerAuth: []  
+    delete:
+      tags:
+      - calendar
+      summary: Delete calendar
+      description: Deleting existing calendar owned by current user
+      operationId: deleteCalendar
+      parameters:
+      - name: calendarId
+        in: path
+        required: true
+        description: 'The calendar id that needs to be updated.'
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description:  "successful operation. Calendar deleted"
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: It is forbidden to delete not your calendar.
+        404:
+          description: Calendar is not found.
+      security:
+      - bearerAuth: []
+  
+  /calendars/{calendarId}/events:
     get:
       tags:
       - event
       summary: Get all events
       description: Getting of all existong events
       operationId: getEvents
+      parameters:
+      - name: calendarId
+        in: path
+        required: true
+        description: 'The calendar id.'
+        schema:
+          type: integer
+          format: int64
       responses:
         200:
           description: "successful operation. Return list of all events"
@@ -170,6 +286,14 @@ paths:
       summary: Create new event
       description: Creating a new event
       operationId: createEvent
+      parameters:
+      - name: calendarId
+        in: path
+        required: true
+        description: 'The calendar id.'
+        schema:
+          type: integer
+          format: int64
       requestBody:
         content:
           application/json:
@@ -187,7 +311,7 @@ paths:
       security:
       - bearerAuth: []
   
-  /events/{eventId}:
+  /calendars/{calendarId}/events/{eventId}:
     get:
       tags:
       - event
@@ -195,6 +319,13 @@ paths:
       description: Getting event by id
       operationId: getEventById
       parameters:
+      - name: calendarId
+        in: path
+        required: true
+        description: 'The calendar id.'
+        schema:
+          type: integer
+          format: int64
       - name: eventId
         in: path
         required: true
@@ -220,8 +351,14 @@ paths:
       - event
       summary: Update event
       description: Updating existing event ownde by current user
-      operationId: updateEvent
       parameters:
+      - name: calendarId
+        in: path
+        required: true
+        description: 'The calendar id.'
+        schema:
+          type: integer
+          format: int64
       - name: eventId
         in: path
         required: true
@@ -245,6 +382,8 @@ paths:
                 $ref: '#/components/schemas/Event'
         401:
           $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: It is forbidden to update not your event.
         404:
           description: User is not found.
       security:
@@ -256,6 +395,13 @@ paths:
       description: Deleting existing event owned by current user
       operationId: deleteEvent
       parameters:
+      - name: calendarId
+        in: path
+        required: true
+        description: 'The calendar id.'
+        schema:
+          type: integer
+          format: int64
       - name: eventId
         in: path
         required: true
@@ -272,6 +418,8 @@ paths:
                 $ref: '#/components/schemas/Event'
         401:
           $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: It is forbidden to delete not your event.
         404:
           description: Event is not found.
       security:
@@ -334,6 +482,7 @@ components:
       required:
       - title
       - date
+      - owner
       - participants
       type: object
       properties:
@@ -344,7 +493,31 @@ components:
           type: string
         date:
           type: string
+        owner:
+          type: string
         participants:
+          type: array
+          items:
+            type: string
+    Calendar:
+      required:
+      - title
+      - owner
+      - visibleTo
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        date:
+          type: string
+        visibleTo:
+          type: array
+          items:
+            type: string
+        events:
           type: array
           items:
             type: string
