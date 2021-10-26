@@ -494,11 +494,13 @@ components:
         date:
           type: string
         owner:
-          type: string
+          type: integer
+          format: int64
         participants:
           type: array
           items:
-            type: string
+            type: integer
+            format: int64
     Calendar:
       required:
       - title
@@ -516,11 +518,13 @@ components:
         visibleTo:
           type: array
           items:
-            type: string
+            type: integer
+            format: int64
         events:
           type: array
           items:
-            type: string
+            type: integer
+            format: int64
   securitySchemes:
     bearerAuth:
       type: http
