@@ -20,17 +20,23 @@ class User(Base):
 
     events_host = relationship("Event", back_populates="user_owner")
     events_member = relationship("EventUsers", back_populates="user")
-    calendars = relationship("CalendarUsers", back_populates="user")
+    calendar = relationship("Calendar", back_populates="user")
 
+    def __repr__(self):
+        return f"{self.id}, {self.name}, {self.surname}, {self.username}, {self.password}"
 
 class Calendar(Base):
     __tablename__ = "calendar"
 
     id = Column(Integer, primary_key=True)
     title = Column(String(100), nullable=False)
+    user_id = Column(Integer, ForeignKey("user.id"))
 
     events = relationship("CalendarEvents", back_populates="calendar")
-    users = relationship("CalendarUsers", back_populates="calendar")
+    user = relationship("User", back_populates="calendar")
+
+    def __repr__(self):
+        return f"{self.id}, {self.title}, {self.user_id}"
 
 
 class Event(Base):
@@ -45,6 +51,9 @@ class Event(Base):
     calendars = relationship("CalendarEvents", back_populates="event")
     members = relationship("EventUsers", back_populates="event")
 
+    def __repr__(self):
+        return f"{self.id}, {self.title}, {self.date}, {self.owner}"
+
 
 class EventUsers(Base):
     __tablename__ = "event_users"
@@ -55,16 +64,8 @@ class EventUsers(Base):
     event = relationship("Event", back_populates="members")
     user = relationship("User", back_populates="events_member")
 
-
-class CalendarUsers(Base):
-    __tablename__ = "calendar_users"
-
-    calendar_id = Column(Integer, ForeignKey("calendar.id"), primary_key=True)
-    user_id = Column(Integer, ForeignKey("user.id"), primary_key=True)
-
-    calendar = relationship("Calendar", back_populates="users")
-    user = relationship("User", back_populates="calendars")
-
+    def __repr__(self):
+        return f"{self.event_id}, {self.user_id}"
 
 class CalendarEvents(Base):
     __tablename__ = "calendar_events"
@@ -75,3 +76,5 @@ class CalendarEvents(Base):
     calendar = relationship("Calendar", back_populates="events")
     event = relationship("Event", back_populates="calendars")
 
+    def __repr__(self):
+        return f"{self.calendar_id}, {self.event_id}"

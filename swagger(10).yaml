@@ -4,6 +4,9 @@ info:
   description: 'Створити сервіс для календаря подій. Користувач має можливість створювати подію, редагувати її, видаляти, долучати інших користувачів до події, переглядати перелік всіх створених події, та подій до яких він долучений..'
   version: 1.0.0
 servers:
+# Added by API Auto Mocking Plugin
+- description: SwaggerHub API Auto Mocking
+  url: https://virtserver.swaggerhub.com/Patsu-rar/Maks/1.0.0
 - url: http://127.0.0.0:5000/api/v1
 tags:
   - name: event
@@ -13,7 +16,7 @@ tags:
   - name: auth
     description: login/logout operations
   - name: calendar
-    description: operations with calendars  
+    description: operations with calendars
 paths:
   /auth/login:
     post:
@@ -36,7 +39,7 @@ paths:
           type: string
       responses:
         200:
-          description: "successful operation. JWT Token is returned" 
+          description: "successful operation. JWT Token is returned"
           content:
             application/json:
               schema:
@@ -44,7 +47,7 @@ paths:
                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         401:
           $ref: '#/components/responses/InvalidCredentialsError'
-  
+
   /auth/logout:
     post:
       tags:
@@ -58,7 +61,7 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
       security:
       - bearerAuth: []
-  
+
   /user:
     post:
       tags:
@@ -81,7 +84,7 @@ paths:
                 $ref: '#/components/schemas/User'
         400:
           description: "User with such username already exists"
-  
+
   /user/{userId}:
     get:
       tags:
@@ -105,7 +108,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
         401:
-          $ref: '#/components/responses/UnauthorizedError'          
+          $ref: '#/components/responses/UnauthorizedError'
         404:
           description: A user with provided ID was not found.
       security:
@@ -144,63 +147,19 @@ paths:
           description: User is not found.
       security:
       - bearerAuth: []
-  
-  /calendars:
-    get:
-      tags:
-      - calendar
-      summary: Get all calendars
-      description: Getting of all existsng calendars
-      operationId: getCalendars
-      responses:
-        200:
-          description: "successful operation. Return list of all calendars"
-          content:
-            application/json:
-              schema:
-                type: "array"
-                items:
-                  $ref: '#/components/schemas/Event'
-        401:
-          $ref: '#/components/responses/UnauthorizedError'          
-      security:
-      - bearerAuth: []
-    post:
-      tags:
-      - calendar
-      summary: Create new calendar
-      description: Creating a new calendar
-      operationId: createCalendar
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Calendar'
-      responses:
-        200:
-          description: "successful operation. Calendar is created"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Calendar'
-        401:
-          $ref: '#/components/responses/UnauthorizedError'     
-      security:
-      - bearerAuth: []
-      
-      
-  /calendars/{calendarId}:
+
+  /calendars/{userId}:
     put:
       tags:
       - calendar
-      summary: Update calendar
+      summary: Update your calendar
       description: Updating existing calendar owned by current user
       operationId: updateCalendar
       parameters:
-      - name: calendarId
+      - name: userId
         in: path
         required: true
-        description: 'The calendar id that needs to be updated.'
+        description: 'The user id'
         schema:
           type: integer
           format: int64
@@ -222,36 +181,34 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         403:
           description: It is forbidden to delete not your calendar.
-        404:
-          description: Calendar is not found.
       security:
-      - bearerAuth: []  
-    delete:
+      - bearerAuth: []
+    get:
       tags:
       - calendar
-      summary: Delete calendar
-      description: Deleting existing calendar owned by current user
-      operationId: deleteCalendar
+      summary: Get specific user calendar
+      description: Getting user calendar by userId
+      operationId: getUserCalendar
       parameters:
-      - name: calendarId
+      - name: userId
         in: path
         required: true
-        description: 'The calendar id that needs to be updated.'
+        description: 'The user id'
         schema:
           type: integer
           format: int64
       responses:
         200:
-          description:  "successful operation. Calendar deleted"
+          description: "successful operation. Return list of all calendars"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calendar'
         401:
           $ref: '#/components/responses/UnauthorizedError'
-        403:
-          description: It is forbidden to delete not your calendar.
-        404:
-          description: Calendar is not found.
       security:
       - bearerAuth: []
-  
+
   /events/{calendarId}:
     get:
       tags:
@@ -277,7 +234,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Event'
         401:
-          $ref: '#/components/responses/UnauthorizedError'          
+          $ref: '#/components/responses/UnauthorizedError'
       security:
       - bearerAuth: []
     post:
@@ -307,11 +264,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Event'
         401:
-          $ref: '#/components/responses/UnauthorizedError'     
+          $ref: '#/components/responses/UnauthorizedError'
       security:
       - bearerAuth: []
-  
-  /events/{calendarId}/{eventId}:
+
+  /events/{eventId}:
     get:
       tags:
       - event
@@ -319,13 +276,6 @@ paths:
       description: Getting event by id
       operationId: getEventById
       parameters:
-      - name: calendarId
-        in: path
-        required: true
-        description: 'The calendar id.'
-        schema:
-          type: integer
-          format: int64
       - name: eventId
         in: path
         required: true
@@ -341,7 +291,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Event'
         401:
-          $ref: '#/components/responses/UnauthorizedError'          
+          $ref: '#/components/responses/UnauthorizedError'
         404:
           description: An event with provided ID was not found.
       security:
@@ -350,15 +300,8 @@ paths:
       tags:
       - event
       summary: Update event
-      description: Updating existing event ownde by current user
+      description: Updating existing event owned by current user
       parameters:
-      - name: calendarId
-        in: path
-        required: true
-        description: 'The calendar id.'
-        schema:
-          type: integer
-          format: int64
       - name: eventId
         in: path
         required: true
@@ -387,7 +330,7 @@ paths:
         404:
           description: User is not found.
       security:
-      - bearerAuth: []  
+      - bearerAuth: []
     delete:
       tags:
       - event
@@ -395,13 +338,6 @@ paths:
       description: Deleting existing event owned by current user
       operationId: deleteEvent
       parameters:
-      - name: calendarId
-        in: path
-        required: true
-        description: 'The calendar id.'
-        schema:
-          type: integer
-          format: int64
       - name: eventId
         in: path
         required: true
@@ -423,8 +359,8 @@ paths:
         404:
           description: Event is not found.
       security:
-      - bearerAuth: []  
-  
+      - bearerAuth: []
+
   /user/events/{username}:
      get:
       tags:
@@ -450,9 +386,49 @@ paths:
                 items:
                   $ref: '#/components/schemas/Event'
         401:
-          $ref: '#/components/responses/UnauthorizedError'   
+          $ref: '#/components/responses/UnauthorizedError'
         404:
           description: User is not found.
+      security:
+      - bearerAuth: []
+
+  /user/add_user_to_event/{userId}/{eventId}:
+    post:
+      tags:
+      - user
+      summary: Add user to event
+      description: Add user by userId to event by eventId (Only for event owners)
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        description: 'The user id.'
+        schema:
+          type: integer
+          format: int64
+      - name: eventId
+        in: path
+        required: true
+        description: 'The event id that needs to be updated with a new user.'
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json: {}
+      responses:
+        200:
+          description:  "successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: It is forbidden to update not your event.
+        404:
+          description: User or event is not found.
       security:
       - bearerAuth: []
 
@@ -460,6 +436,7 @@ components:
   schemas:
     User:
       required:
+      - id
       - username
       - password
       - name
@@ -480,10 +457,10 @@ components:
           format: password
     Event:
       required:
+      - id
       - title
       - date
       - owner
-      - participants
       type: object
       properties:
         id:
@@ -496,16 +473,11 @@ components:
         owner:
           type: integer
           format: int64
-        participants:
-          type: array
-          items:
-            type: integer
-            format: int64
     Calendar:
       required:
+      - id
       - title
-      - owner
-      - visibleTo
+      - userId
       type: object
       properties:
         id:
@@ -513,18 +485,9 @@ components:
           format: int64
         title:
           type: string
-        date:
-          type: string
-        visibleTo:
-          type: array
-          items:
-            type: integer
-            format: int64
-        events:
-          type: array
-          items:
-            type: integer
-            format: int64
+        userId:
+          type: integer
+          format: int64
   securitySchemes:
     bearerAuth:
       type: http

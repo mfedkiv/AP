@@ -1,12 +1,9 @@
 from flask import Flask
+from API.eventAPI import eventQuery
 
 app = Flask(__name__)
 
-
-@app.route('/api/v1/hello-world/25')
-def index():
-    return "Hello World 25"
-
+app.register_blueprint(eventQuery)
 
 if __name__ == "__main__":
     app.run(debug=True)
