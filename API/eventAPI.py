@@ -1,6 +1,3 @@
-import re
-from cmath import e
-
 import bcrypt
 from flask_restful import Resource
 from flask import jsonify, request, Blueprint
@@ -31,6 +28,12 @@ class EventAPI(Resource):
 
     def post(self, calendarId):
         new_event = Event(**request.json)
+
+        event = session.query(Calendar).filter(Calendar.id == calendarId).first()
+        user = session.query(Calendar).filter(event.user_id == new_event.owner).first()
+        if not user:
+            return {'message': 'This user is not the owner of this calendar.'}, 400
+
         session.add(new_event)
         session.commit()
 
@@ -56,34 +59,28 @@ eventQuery.add_url_rule('/events/<int:calendarId>', view_func=EventAPI.as_view("
 
 class EventCalendarAPI(Resource):
     def get(self, eventId):
-        try:
-            event = session.query(Event).get(eventId)
-            if not event:
-                return {'message': 'No events with this id.'}, 400
-            event = event.__dict__
-            del event['_sa_instance_state']
-            return jsonify(event), 200
-        except Exception:
-            return "Unsuccessful operation"
+        event = session.query(Event).get(eventId)
+        if not event:
+            return {'message': 'No events with this id.'}, 400
+        event = event.__dict__
+        del event['_sa_instance_state']
+        return jsonify(event), 200
 
     def put(self, eventId):
-        try:
-            event = session.query(Event).filter(Event.id == eventId).first()
-            params = request.json
-            if not event:
-                return {'message': 'No events with this id.'}, 400
-            for key, value in params.items():
-                setattr(event, key, value)
-            session.commit()
-            serialized = {
-                "id": event.id,
-                "title": event.title,
-                "date": event.date,
-                "owner": event.owner
-            }
-            return serialized
-        except Exception:
-            return "Unsuccessful operation"
+        event = session.query(Event).filter(Event.id == eventId).first()
+        params = request.json
+        if not event:
+            return {'message': 'No events with this id.'}, 400
+        for key, value in params.items():
+            setattr(event, key, value)
+        session.commit()
+        serialized = {
+            "id": event.id,
+            "title": event.title,
+            "date": event.date,
+            "owner": event.owner
+        }
+        return serialized
 
     def delete(self, eventId):
         event = session.query(Event).filter(Event.id == eventId).first()
@@ -106,30 +103,31 @@ eventQuery.add_url_rule('/event/<int:eventId>', view_func=EventCalendarAPI.as_vi
 
 class UserRegistrationAPI(Resource):
     def post(self):
-        try:
-            new_user = User(**request.json)
-            session.add(new_user)
-            session.commit()
+        new_user = User(**request.json)
 
-            serialized_user = {
-                "id": new_user.id,
-                "name": new_user.name,
-                "surname": new_user.surname,
-                "username": new_user.username
-            }
+        params = request.json
 
-            hashed = bcrypt.hashpw(new_user.password.encode('utf-8'), bcrypt.gensalt())
-            new_user.password = hashed
+        if session.query(User).filter_by(username=params['username']).first():
+            return {"message": "User with provided username already exists"}, 400
 
-            new_calendar = Calendar(title=request.json["name"] + "'s calendar", user_id=new_user.id)
-            session.add(new_calendar)
-            session.commit()
+        session.add(new_user)
+        session.commit()
 
-            return jsonify(serialized_user)
+        serialized_user = {
+            "id": new_user.id,
+            "name": new_user.name,
+            "surname": new_user.surname,
+            "username": new_user.username
+        }
 
-        except IntegrityError as err:
-            if err.orig.args:
-                return {"message": "User with such username already exists."}, 400
+        hashed = bcrypt.hashpw(new_user.password.encode('utf-8'), bcrypt.gensalt())
+        new_user.password = hashed
+
+        new_calendar = Calendar(title=request.json["name"] + "'s calendar", user_id=new_user.id)
+        session.add(new_calendar)
+        session.commit()
+
+        return jsonify(serialized_user)
 
 
 eventQuery.add_url_rule('/user', view_func=UserRegistrationAPI.as_view("userRegistrationApi"))
@@ -146,11 +144,18 @@ class UserAPI(Resource):
 
     def put(self, userId):
         user = session.query(User).filter(User.id == userId).first()
-        params = request.json
+
         if not user:
             return {'message': 'No users with this id.'}, 400
+
+        params = request.json
+
+        if session.query(User).filter_by(username=params['username']).first():
+            return {"message": "User with provided username already exists"}, 400
+
         for key, value in params.items():
             setattr(user, key, value)
+
         session.commit()
         serialized = {
             "id": user.id,
@@ -186,17 +191,25 @@ eventQuery.add_url_rule('/user/events/<string:username>', view_func=UserEventsAP
 
 class UserAddAPI(Resource):
     def post(self, userId, eventId):
+        user = session.query(User).filter(User.id == userId).first()
+
+        if not user:
+            return {'message': 'No user with this id.'}, 400
+
+        new_member_calendar = session.query(Calendar).filter(Calendar.user_id == userId).first()
+        new_calendar_event = CalendarEvents(calendar_id=new_member_calendar.id, event_id=eventId)
+
+        event = session.query(Event).filter(Event.id == eventId).first()
+
+        if not event:
+            return {'message': 'No event with this id.'}, 400
+
         new_member = EventUsers(event_id=eventId, user_id=userId)
         session.add(new_member)
         session.commit()
 
-        new_member_calendar = session.query(Calendar).filter(Calendar.user_id == userId).first()
-        new_calendar_event = CalendarEvents(calendar_id=new_member_calendar.user_id, event_id=eventId)
         session.add(new_calendar_event)
         session.commit()
-
-        if not new_member and new_member_calendar:
-            return {'message': 'No events or users with this id.'}, 400
 
         return "Successful operation.", 200
 
