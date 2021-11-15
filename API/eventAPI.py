@@ -29,6 +29,14 @@ class EventAPI(Resource):
     def post(self, calendarId):
         new_event = Event(**request.json)
 
+        all_users = session.query(User).filter(new_event.owner == User.id).first()
+        if not all_users:
+            return {'message': 'There are no users with this id.'}, 400
+
+        all_calendars = session.query(Calendar).filter(Calendar.id == calendarId).first()
+        if not all_calendars:
+            return {'message': 'There are no calendars with this id.'}, 400
+
         event = session.query(Calendar).filter(Calendar.id == calendarId).first()
         user = session.query(Calendar).filter(event.user_id == new_event.owner).first()
         if not user:
