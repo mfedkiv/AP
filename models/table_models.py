@@ -1,12 +1,17 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy import create_engine, Column
 from sqlalchemy import Integer, String, DateTime, ForeignKey
+from flask_jwt_extended import create_access_token
+from datetime import timedelta
+from passlib.hash import bcrypt
 
 from config.config import connection_string
 
 engine = create_engine(connection_string)
 Base = declarative_base()
+Session = sessionmaker()
+session = Session(bind=engine)
 
 
 class User(Base):
@@ -22,8 +27,27 @@ class User(Base):
     events_member = relationship("EventUsers", back_populates="user")
     calendar = relationship("Calendar", back_populates="user")
 
+    def __init__(self, **kwargs):
+        self.name = kwargs.get('name')
+        self.surname = kwargs.get('surname')
+        self.username = kwargs.get('username')
+        self.password = bcrypt.hash(kwargs.get('password'))
+
+    def get_token(self, expire_time=1):
+        expire_delta = timedelta(expire_time)
+        token = create_access_token(identity=self.id, expires_delta=expire_delta)
+        return token
+
+    @classmethod
+    def authenticate(cls, username, password):
+        user = session.query(User).filter_by(username=username).first()
+        if not bcrypt.verify(password, user.password):
+            return False
+        return user
+
     def __repr__(self):
         return f"{self.id}, {self.name}, {self.surname}, {self.username}, {self.password}"
+
 
 class Calendar(Base):
     __tablename__ = "calendar"
@@ -67,6 +91,7 @@ class EventUsers(Base):
     def __repr__(self):
         return f"{self.event_id}, {self.user_id}"
 
+
 class CalendarEvents(Base):
     __tablename__ = "calendar_events"
 
@@ -78,3 +103,11 @@ class CalendarEvents(Base):
 
     def __repr__(self):
         return f"{self.calendar_id}, {self.event_id}"
+
+
+class TokenBlockList(Base):
+    __tablename__ = "token_block_list"
+
+    id = Column(Integer, primary_key=True)
+    jti = Column(String(36), nullable=False)
+    created_at = Column(DateTime, nullable=False)
