@@ -67,12 +67,10 @@ eventQuery.add_url_rule('/events/<int:calendar_id>', view_func=EventAPI.as_view(
 class EventCalendarAPI(Resource):
     @jwt_required()
     def get(self, event_id):
-        event = session.query(Event).get(event_id)
+        event = session.query(Event).filter(Event.id == event_id).first()
         if not event:
             return {'message': 'No events with this id.'}, 404
-        event = event.__dict__
-        del event['_sa_instance_state']
-        return jsonify(event), 200
+        return jsonify(str(event)), 200
 
     @jwt_required()
     def put(self, event_id):

@@ -11,14 +11,12 @@ class CalendarAPI(Resource):
     @jwt_required()
     def get(self, calendar_id):
         logged_in_user_id = get_jwt_identity()
-        calendar = session.query(Calendar).get(calendar_id)
+        calendar = session.query(Calendar).filter(Calendar.id == calendar_id).first()
         if not calendar:
             return {'message': 'No calendars with this id.'}, 400
         if calendar.user_id != logged_in_user_id:
             return {'message': 'Access denied'}, 403
-        calendar = calendar.__dict__
-        del calendar['_sa_instance_state']
-        return jsonify(calendar), 200
+        return jsonify(str(calendar)), 200
 
     @jwt_required()
     def put(self, calendar_id):

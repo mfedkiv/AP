@@ -29,3 +29,4 @@ def check_if_token_revoked(jwt_header, jwt_payload):
 
 if __name__ == "__main__":
     app.run(debug=True)
+

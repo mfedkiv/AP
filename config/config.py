@@ -6,7 +6,7 @@ with open("config/config.yaml", 'r', encoding='utf-8') as f:
     password = data["password"]
     db_name = data["db_name"]
 
-connection_string = f"mysql+mysqlconnector://{username}:{password}@localhost/{db_name}"
+connection_string = f"mysql+pymysql://{username}:{password}@localhost:3306/{db_name}"
 
 
 class Config:
